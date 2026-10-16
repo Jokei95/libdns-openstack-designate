@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/libdns/libdns"
-	designate "github.com/libdns/openstack-designate"
+	designate "github.com/Jokei95/libdns-openstack-designate"
 	"log"
 	"os"
 	"time"
