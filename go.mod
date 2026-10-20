@@ -1,4 +1,4 @@
-module github.com/libdns/openstack-designate
+module github.com/Jokei95/libdns-openstack-designate
 
 go 1.14
 
