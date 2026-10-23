@@ -156,8 +156,8 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 
 // Interface guards
 var (
-	_ libdns.RRGetter   = (*Provider)(nil)
-	_ libdns.RRAppender = (*Provider)(nil)
-	_ libdns.RRSetter   = (*Provider)(nil)
-	_ libdns.RRDeleter  = (*Provider)(nil)
+	_ libdns.RecordGetter   = (*Provider)(nil)
+	_ libdns.RecordAppender = (*Provider)(nil)
+	_ libdns.RecordSetter   = (*Provider)(nil)
+	_ libdns.RecordDeleter  = (*Provider)(nil)
 )
