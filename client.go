@@ -11,10 +11,10 @@ import (
 	"time"
 )
 
-func (p *Provider) getRecords(recordSets []recordsets.RecordSet) ([]libdns.Record, error) {
-	var records []libdns.Record
+func (p *Provider) getRecords(recordSets []recordsets.RecordSet) ([]libdns.RR, error) {
+	var records []libdns.RR
 	for _, j := range recordSets {
-		tmp := libdns.Record{
+		tmp := libdns.RR{
 			ID:   j.ID,
 			Type: j.Type,
 			Name: j.Name,
@@ -52,12 +52,12 @@ func (p *Provider) getRecordID(recordName string, zone string) (string, error) {
 	return "", nil
 }
 
-func (p *Provider) createRecord(record libdns.Record, zone string) error {
+func (p *Provider) createRecord(record libdns.RR, zone string) error {
 	createOpts := recordsets.CreateOpts{
 		Name:    record.Name + ".",
 		Type:    record.Type,
 		TTL:     int(record.TTL / time.Second),
-		Records: []string{record.Value},
+		Records: []string{record.Data},
 	}
 
 	exist, err := p.getRecordID(record.Name, zone)
@@ -77,10 +77,10 @@ func (p *Provider) createRecord(record libdns.Record, zone string) error {
 	return nil
 }
 
-func (p *Provider) updateRecord(record libdns.Record, recordID string) error {
+func (p *Provider) updateRecord(record libdns.RR, recordID string) error {
 	updateOpts := recordsets.UpdateOpts{
 		TTL:     intToPointer(int(record.TTL / time.Second)),
-		Records: []string{record.Value},
+		Records: []string{record.Data},
 	}
 
 	// Update updates a recordset in a given zone
