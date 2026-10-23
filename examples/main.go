@@ -3,83 +3,77 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/libdns/libdns"
+	designate "github.com/Jokei95/libdns-openstack-designate"
 	"log"
 	"os"
 	"time"
-
-	"github.com/libdns/libdns"
-	designate "github.com/libdns/openstack-designate"
 )
 
 func main() {
+	// specify proper ZONE name.
+	// example: bar.example.com.
 	zone := os.Getenv("ZONE")
 	if zone == "" {
-		log.Fatal("ZONE not set")
+		fmt.Printf("ZONE not set\n")
+		return
 	}
 
-	provider := designate.Provider{
-		AuthOpenStack: designate.AuthOpenStack{
-			RegionName:         "foo",
-			TenantID:           "123123123",
-			IdentityApiVersion: "2",
-			Password:           "foo-bar-password",
-			AuthURL:            "https://keystone.example.com/v2.0",
-			Username:           "foo-username",
-			TenantName:         "foo-tenant-name",
-			EndpointType:       "publicURL",
-		},
-	}
-
-	ctx := context.Background()
+	provider := designate.Provider{AuthOpenStack: designate.AuthOpenStack{
+		RegionName:         "foo",
+		TenantID:           "123123123",
+		IdentityApiVersion: "2",
+		Password:           "foo-bar-password",
+		AuthURL:            "https://keystone.example.com/v2.0",
+		Username:           "foo-username",
+		TenantName:         "foo-tenant-name",
+		EndpointType:       "publicURL",
+	}}
 
 	// GET records
-	records, err := provider.GetRecords(ctx, zone)
+	records, err := provider.GetRecords(context.TODO(), zone)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("ERROR: %s\n", err.Error())
 	}
-	fmt.Println("Records:", records)
-
-	// Record names are relative to the zone in libdns v1.
-	testName := "foo-libdns"
-	ttl := 600 * time.Second
+	fmt.Println("Records", records)
 
 	// CREATE records
-	add, err := provider.AppendRecords(ctx, zone, []libdns.Record{
-		libdns.TXT{
-			Name: testName,
-			Text: fmt.Sprintf(
-				"Replacement test entry created by libdns %s",
-				time.Now(),
-			),
-			TTL: ttl,
-		},
-	})
+	testName := "foo-libdns."
+	add, err := provider.AppendRecords(context.TODO(), zone, []libdns.Record{libdns.Record{
+		Type:  "TXT",
+		Name:  testName + zone,
+		Value: fmt.Sprintf("Replacement test entry created by libdns %s", time.Now()),
+		TTL:   time.Duration(600) * time.Second,
+	}})
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("ADDED:", add)
+	fmt.Println("ADDED", add)
 
 	// UPDATE records
-	edit, err := provider.SetRecords(ctx, zone, []libdns.Record{
-		libdns.TXT{
-			Name: testName,
-			Text: fmt.Sprintf(
-				"SET1 test entry created by libdns %s",
-				time.Now(),
-			),
-			TTL: ttl,
-		},
-	})
+	testName = "foo-libdns."
+	edit, err := provider.SetRecords(context.TODO(), zone, []libdns.Record{libdns.Record{
+		Type:  "TXT",
+		Name:  testName + zone,
+		Value: fmt.Sprintf("SET1 test entry created by libdns %s", time.Now()),
+		TTL:   time.Duration(600) * time.Second,
+	}})
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("UPDATED:", edit)
+	fmt.Println("UPDATED", edit)
 
 	// DELETE records
-	// Delete the actual records returned by SetRecords.
-	del, err := provider.DeleteRecords(ctx, zone, edit)
+	testName = "foo-libdns."
+	del, err := provider.DeleteRecords(context.TODO(), zone, []libdns.Record{libdns.Record{
+		Type: "TXT",
+		Name: testName + zone,
+	}})
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("DELETED:", del)
+
+	fmt.Println("DELETED", del)
 }

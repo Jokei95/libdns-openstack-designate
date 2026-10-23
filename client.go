@@ -11,47 +11,22 @@ import (
 	"time"
 )
 
-func (p *Provider) getRecords(
-    recordSets []recordsets.RecordSet,
-    zone string,
-) ([]libdns.Record, error) {
-    var records []libdns.Record
+func (p *Provider) getRecords(recordSets []recordsets.RecordSet) ([]libdns.Record, error) {
+	var records []libdns.Record
+	for _, j := range recordSets {
+		tmp := libdns.RR{
+			Type: j.Type,
+			Name: j.Name,
+			TTL:  time.Duration(j.TTL) * time.Second,
+		}
+		records = append(records, tmp)
+	}
 
-    for _, rs := range recordSets {
-        for _, value := range rs.Records {
-            // Designate may return quoted TXT data.
-            // This handles a single quoted string.
-            // Multi-string TXT values need separate handling.
-            if rs.Type == "TXT" {
-                if text, err := strconv.Unquote(value); err == nil {
-                    value = text
-                }
-            }
-
-            rr := libdns.RR{
-                Name: libdns.RelativeName(rs.Name, zone),
-                Type: rs.Type,
-                TTL:  time.Duration(rs.TTL) * time.Second,
-                Data: value,
-            }
-
-            parsed, err := rr.Parse()
-            if err != nil {
-                return nil, fmt.Errorf(
-                    "parsing record %s: %w",
-                    rs.Name, err,
-                )
-            }
-
-            records = append(records, parsed)
-        }
-    }
-
-    return records, nil
+	return records, nil
 }
 
 func (p *Provider) getRecordID(recordName string, zone string) (string, error) {
-	recordName = recordName + "."
+	recordName = libdns.AbsoluteName(recordName, zone)
 
 	listOpts := recordsets.ListOpts{
 		Type: "TXT",
@@ -76,14 +51,12 @@ func (p *Provider) getRecordID(recordName string, zone string) (string, error) {
 	return "", nil
 }
 
-func (p *Provider) createRecord(record libdns.Record, zone string) error {
-	rr := record.RR()
-
+func (p *Provider) createRecord(record libdns.RR, zone string) error {
 	createOpts := recordsets.CreateOpts{
-		Name:    libdns.AbsoluteName(rr.Name, zone),
-		Type:    rr.Type,
-		TTL:     int(rr.TTL / time.Second),
-		Records: []string{rr.Data},
+		Name:    libdns.AbsoluteName(record.Name, zone),
+		Type:    record.Type,
+		TTL:     int(record.TTL / time.Second),
+		Records: []string{record.Data},
 	}
 
 	exist, err := p.getRecordID(record.Name, zone)
@@ -100,22 +73,6 @@ func (p *Provider) createRecord(record libdns.Record, zone string) error {
 		return fmt.Errorf("cannot create DNS record: %v", err)
 	}
 
-	return nil
-}
-
-func (p *Provider) updateRecord(record libdns.Record, recordID string) error {
-	rr := record.RR()
-
-	updateOpts := recordsets.UpdateOpts{
-		TTL:     intToPointer(int(rr.TTL / time.Second)),
-		Records: []string{rr.Data},
-	}
-
-	// Update updates a recordset in a given zone
-	_, err := recordsets.Update(p.dnsClient, p.zoneID, recordID, updateOpts).Extract()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

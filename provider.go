@@ -56,7 +56,7 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record
 		return nil, fmt.Errorf("trying to extract records: %v", err)
 	}
 
-	return p.getRecords(allRRs, zone)
+	return p.getRecords(allRRs)
 }
 
 // AppendRecords adds records to the zone and returns the records that were created.
@@ -75,7 +75,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 	var appendedRecords []libdns.Record
 
 	for _, record := range records {
-		err := p.createRecord(record, zone)
+		err := p.createRecord(record.RR(), zone)
 		if err != nil {
 			return nil, err
 		}
@@ -100,8 +100,7 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 	var deletedRecords []libdns.Record
 
 	for _, record := range records {
-		rr := record.RR()
-		recordID, err := p.getRecordID(rr.Name, rr.Type, zone)
+		recordID, err := p.getRecordID(record.RR().Name, zone)
 		if err != nil {
 			return nil, err
 		}
@@ -136,8 +135,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 	var setRecords []libdns.Record
 
 	for _, record := range records {
-		rr := record.RR
-		recordID, err := p.getRecordID(rr.Name, rr.Type, zone)
+		recordID, err := p.getRecordID(record.RR().Name, zone)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +144,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 			return nil, errors.New("recordID does not exist")
 		}
 
-		err = p.updateRecord(record, recordID)
+		err = p.updateRecord(record.RR(), recordID)
 		if err != nil {
 			return setRecords, err
 		}
