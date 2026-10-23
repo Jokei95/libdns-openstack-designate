@@ -39,10 +39,10 @@ func main() {
 
 	// CREATE records
 	testName := "foo-libdns."
-	add, err := provider.AppendRecords(context.TODO(), zone, []libdns.RR{libdns.RR{
+	add, err := provider.AppendRecords(context.TODO(), zone, []libdns.Record{libdns.Record{
 		Type:  "TXT",
 		Name:  testName + zone,
-		Data: fmt.Sprintf("Replacement test entry created by libdns %s", time.Now()),
+		Value: fmt.Sprintf("Replacement test entry created by libdns %s", time.Now()),
 		TTL:   time.Duration(600) * time.Second,
 	}})
 
@@ -53,10 +53,10 @@ func main() {
 
 	// UPDATE records
 	testName = "foo-libdns."
-	edit, err := provider.SetRecords(context.TODO(), zone, []libdns.RR{libdns.RR{
+	edit, err := provider.SetRecords(context.TODO(), zone, []libdns.Record{libdns.Record{
 		Type:  "TXT",
 		Name:  testName + zone,
-		Data: fmt.Sprintf("SET1 test entry created by libdns %s", time.Now()),
+		Value: fmt.Sprintf("SET1 test entry created by libdns %s", time.Now()),
 		TTL:   time.Duration(600) * time.Second,
 	}})
 	if err != nil {
@@ -66,7 +66,7 @@ func main() {
 
 	// DELETE records
 	testName = "foo-libdns."
-	del, err := provider.DeleteRecords(context.TODO(), zone, []libdns.RR{libdns.RR{
+	del, err := provider.DeleteRecords(context.TODO(), zone, []libdns.Record{libdns.Record{
 		Type: "TXT",
 		Name: testName + zone,
 	}})

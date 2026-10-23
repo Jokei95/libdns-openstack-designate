@@ -31,7 +31,7 @@ type AuthOpenStack struct {
 }
 
 // GetRecords lists all the records in the zone.
-func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.RR, error) {
+func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
 	err := p.auth()
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to OpenStack Designate: %v", err)
@@ -56,12 +56,12 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.RR, er
 		return nil, fmt.Errorf("trying to extract records: %v", err)
 	}
 
-	return p.getRecords(allRRs)
+	return p.getRecords(allRRs, zone)
 }
 
 // AppendRecords adds records to the zone and returns the records that were created.
 // Due to technical limitations of the LiveDNS API, it may affect the TTL of similar records
-func (p *Provider) AppendRecords(ctx context.Context, zone string, records []libdns.RR) ([]libdns.RR, error) {
+func (p *Provider) AppendRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
 	err := p.auth()
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to OpenStack Designate: %v", err)
@@ -72,7 +72,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 		return nil, fmt.Errorf("cannot set ZONE: %v", err)
 	}
 
-	var appendedRecords []libdns.RR
+	var appendedRecords []libdns.Record
 
 	for _, record := range records {
 		err := p.createRecord(record, zone)
@@ -86,7 +86,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 }
 
 // DeleteRecords deletes records from the zone and returns the records that were deleted.
-func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []libdns.RR) ([]libdns.RR, error) {
+func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
 	err := p.auth()
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to OpenStack Designate: %v", err)
@@ -97,10 +97,11 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 		return nil, fmt.Errorf("cannot set ZONE: %v", err)
 	}
 
-	var deletedRecords []libdns.RR
+	var deletedRecords []libdns.Record
 
 	for _, record := range records {
-		recordID, err := p.getRecordID(record.Name, zone)
+		rr := record.RR()
+		recordID, err := p.getRecordID(rr.Name, rr.Type, zone)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +122,7 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 
 // SetRecords sets the records in the zone, either by updating existing records or creating new ones, and returns the recordsthat were updated.
 // Due to technical limitations of the LiveDNS API, it may affect the TTL of similar records.
-func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns.RR) ([]libdns.RR, error) {
+func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
 	err := p.auth()
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to OpenStack Designate: %v", err)
@@ -132,10 +133,11 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 		return nil, fmt.Errorf("cannot set ZONE: %v", err)
 	}
 
-	var setRecords []libdns.RR
+	var setRecords []libdns.Record
 
 	for _, record := range records {
-		recordID, err := p.getRecordID(record.Name, zone)
+		rr := record.RR
+		recordID, err := p.getRecordID(rr.Name, rr.Type, zone)
 		if err != nil {
 			return nil, err
 		}
@@ -156,8 +158,8 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 
 // Interface guards
 var (
-	_ libdns.RRGetter   = (*Provider)(nil)
-	_ libdns.RRAppender = (*Provider)(nil)
-	_ libdns.RRSetter   = (*Provider)(nil)
-	_ libdns.RRDeleter  = (*Provider)(nil)
+	_ libdns.RecordGetter   = (*Provider)(nil)
+	_ libdns.RecordAppender = (*Provider)(nil)
+	_ libdns.RecordSetter   = (*Provider)(nil)
+	_ libdns.RecordDeleter  = (*Provider)(nil)
 )

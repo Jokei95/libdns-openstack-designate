@@ -11,19 +11,43 @@ import (
 	"time"
 )
 
-func (p *Provider) getRecords(recordSets []recordsets.RecordSet) ([]libdns.RR, error) {
-	var records []libdns.RR
-	for _, j := range recordSets {
-		tmp := libdns.RR{
-			ID:   j.ID,
-			Type: j.Type,
-			Name: j.Name,
-			TTL:  time.Duration(j.TTL) * time.Second,
-		}
-		records = append(records, tmp)
-	}
+func (p *Provider) getRecords(
+    recordSets []recordsets.RecordSet,
+    zone string,
+) ([]libdns.Record, error) {
+    var records []libdns.Record
 
-	return records, nil
+    for _, rs := range recordSets {
+        for _, value := range rs.Records {
+            // Designate may return quoted TXT data.
+            // This handles a single quoted string.
+            // Multi-string TXT values need separate handling.
+            if rs.Type == "TXT" {
+                if text, err := strconv.Unquote(value); err == nil {
+                    value = text
+                }
+            }
+
+            rr := libdns.RR{
+                Name: libdns.RelativeName(rs.Name, zone),
+                Type: rs.Type,
+                TTL:  time.Duration(rs.TTL) * time.Second,
+                Data: value,
+            }
+
+            parsed, err := rr.Parse()
+            if err != nil {
+                return nil, fmt.Errorf(
+                    "parsing record %s: %w",
+                    rs.Name, err,
+                )
+            }
+
+            records = append(records, parsed)
+        }
+    }
+
+    return records, nil
 }
 
 func (p *Provider) getRecordID(recordName string, zone string) (string, error) {
@@ -52,12 +76,14 @@ func (p *Provider) getRecordID(recordName string, zone string) (string, error) {
 	return "", nil
 }
 
-func (p *Provider) createRecord(record libdns.RR, zone string) error {
+func (p *Provider) createRecord(record libdns.Record, zone string) error {
+	rr := record.RR()
+
 	createOpts := recordsets.CreateOpts{
-		Name:    record.Name + ".",
-		Type:    record.Type,
-		TTL:     int(record.TTL / time.Second),
-		Records: []string{record.Data},
+		Name:    libdns.AbsoluteName(rr.Name, zone),
+		Type:    rr.Type,
+		TTL:     int(rr.TTL / time.Second),
+		Records: []string{rr.Data},
 	}
 
 	exist, err := p.getRecordID(record.Name, zone)
@@ -77,10 +103,12 @@ func (p *Provider) createRecord(record libdns.RR, zone string) error {
 	return nil
 }
 
-func (p *Provider) updateRecord(record libdns.RR, recordID string) error {
+func (p *Provider) updateRecord(record libdns.Record, recordID string) error {
+	rr := record.RR()
+
 	updateOpts := recordsets.UpdateOpts{
-		TTL:     intToPointer(int(record.TTL / time.Second)),
-		Records: []string{record.Data},
+		TTL:     intToPointer(int(rr.TTL / time.Second)),
+		Records: []string{rr.Data},
 	}
 
 	// Update updates a recordset in a given zone
