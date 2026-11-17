@@ -21,8 +21,8 @@ func (p *Provider) authenticate() error {
 
 	opts := gophercloud.AuthOptions{
 		IdentityEndpoint: p.AuthOpenStack.AuthURL,
-		Username:         p.AuthOpenStack.Username,
-		Password:         p.AuthOpenStack.Password,
+		ApplicationCredentialID:         p.AuthOpenStack.ApplicationCredentialID,
+		ApplicationCredentialSecret:         p.AuthOpenStack.ApplicationCredentialSecret,
 		TenantID:         p.AuthOpenStack.TenantID,
 		TenantName:       p.AuthOpenStack.TenantName,
 		AllowReauth:      true,

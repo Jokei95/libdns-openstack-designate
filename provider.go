@@ -27,9 +27,9 @@ type AuthOpenStack struct {
 	RegionName         string `json:"region_name"`
 	TenantID           string `json:"tenant_id"`
 	IdentityApiVersion string `json:"identity_api_version"`
-	Password           string `json:"password"`
+	ApplicationCredentialSecret           string `json:"ApplicationCredentialSecret"`
 	AuthURL            string `json:"auth_url"`
-	Username           string `json:"username"`
+	ApplicationCredentialID           string `json:"ApplicationCredentialID"`
 	TenantName         string `json:"tenant_name"`
 	EndpointType       string `json:"endpoint_type"`
 }
